@@ -128,7 +128,7 @@ def analyze_holders_and_volume(ticker='NVDA'):
 # -----------------------------
 if __name__ == "__main__":
 
-    NEWS_API_KEY = "a8f214126d884e70ace672b36459c3f6"
+    NEWS_API_KEY = "PASTE YOUR API KEY HERE"
 
     print("Fetching Nvidia stock data...")
     stock_data = get_stock_data()
