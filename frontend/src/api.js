@@ -1,14 +1,14 @@
 import axios from 'axios';
 
-const BASE_URL ="https://stock-price-forecasting-system.onrender.com";
-  import.meta.env.VITE_API_URL ||
-  (import.meta.env.PROD
-    ? 'https://your-quantedge-backend.onrender.com'
-    : '/api');
+/**
+ * BASE_URL determines where your frontend sends requests.
+ * It checks Netlify environment variables first, then falls back to your Render URL.
+ */
+const BASE_URL = import.meta.env.VITE_API_URL || "https://stock-price-forecasting-system.onrender.com";
 
 const client = axios.create({
   baseURL: BASE_URL,
-  timeout: 180_000, // 3 min – ML training can take a while
+  timeout: 180000, // 3 minutes - ML training and prediction can take time
   headers: { 'Content-Type': 'application/json' },
 });
 
@@ -25,12 +25,18 @@ client.interceptors.response.use(
   }
 );
 
+/**
+ * Fetches stock predictions for given tickers.
+ */
 export const fetchPredictions = async (tickers) => {
   const tickerString = Array.isArray(tickers) ? tickers.join(',') : tickers;
   const res = await client.get(`/predict?tickers=${tickerString}`);
   return res.data;
 };
 
+/**
+ * Checks if the Render backend is active.
+ */
 export const fetchHealth = async () => {
   const res = await client.get('/health');
   return res.data;
