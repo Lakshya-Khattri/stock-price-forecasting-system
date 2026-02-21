@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const BASE_URL =
+const BASE_URL ="https://stock-price-forecasting-system.onrender.com";
   import.meta.env.VITE_API_URL ||
   (import.meta.env.PROD
     ? 'https://your-quantedge-backend.onrender.com'
