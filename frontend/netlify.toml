@@ -1,6 +1,11 @@
 [build]
-  base = "."
+  # Tell Netlify your code is inside the frontend folder
+  base = "frontend"
+  
+  # The directory where the built files will be (relative to 'frontend')
   publish = "dist"
+  
+  # The command to run inside the 'frontend' folder
   command = "npm run build"
 
 [[redirects]]
