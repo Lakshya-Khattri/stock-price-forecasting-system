@@ -38,7 +38,7 @@ export const fetchPredictions = async (tickers) => {
  * Checks if the Render backend is active.
  */
 export const fetchHealth = async () => {
-  const res = await client.get('/health');
+  const res = await client.get('/api/health');
   return res.data;
 };
 
