@@ -1,14 +1,15 @@
 [build]
-  # Tell Netlify your code is inside the frontend folder
+  # Navigate into the frontend folder before building
   base = "frontend"
   
-  # The directory where the built files will be (relative to 'frontend')
-  publish = "dist"
-  
-  # The command to run inside the 'frontend' folder
+  # Run the Vite build command
   command = "npm run build"
+  
+  # The output folder created by Vite inside the 'frontend' folder
+  publish = "dist"
 
 [[redirects]]
+  # This prevents 404 errors when refreshing the page
   from = "/*"
   to = "/index.html"
   status = 200
