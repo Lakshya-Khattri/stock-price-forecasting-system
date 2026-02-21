@@ -1,38 +1,36 @@
-const express = require('express');
-const cors = require('cors');
-const routes = require('./routes');
-const errorHandler = require('./errorHandler');
+const express = require("express");
+const cors = require("cors");
+const routes = require("./routes");
+const errorHandler = require("./errorHandler");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-/* -------------------- CORS CONFIG -------------------- */
-
-const allowedOrigins = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(',')
-  : [];
+/* -------------------- CORS CONFIG (FINAL STABLE VERSION) -------------------- */
 
 app.use(
   cors({
     origin: function (origin, callback) {
-      // Allow server-to-server or tools like Postman
+      // Allow server tools like Postman
       if (!origin) return callback(null, true);
 
-      // Allow localhost during development
+      // Allow localhost (development)
       if (
-        origin.startsWith('http://localhost') ||
-        origin.startsWith('http://127.0.0.1')
+        origin.startsWith("http://localhost") ||
+        origin.startsWith("http://127.0.0.1")
       ) {
         return callback(null, true);
       }
 
-      // Allow explicitly defined production origins
-      if (allowedOrigins.includes(origin)) {
+      // Allow ANY Netlify deploy or preview URL for your project
+      if (
+        origin.includes("aistockpredictionbycodeforge.netlify.app")
+      ) {
         return callback(null, true);
       }
 
-      console.log('Blocked by CORS:', origin);
-      return callback(new Error('Not allowed by CORS'));
+      console.log("Blocked by CORS:", origin);
+      return callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
   })
@@ -44,12 +42,12 @@ app.use(express.json());
 
 /* -------------------- ROUTES -------------------- */
 
-app.use('/api', routes);
+app.use("/api", routes);
 
 /* -------------------- HEALTH CHECK -------------------- */
 
-app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok' });
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "ok" });
 });
 
 /* -------------------- 404 HANDLER -------------------- */
@@ -57,7 +55,7 @@ app.get('/health', (req, res) => {
 app.use((req, res) => {
   res.status(404).json({
     success: false,
-    error: 'Route not found',
+    error: "Route not found",
   });
 });
 
