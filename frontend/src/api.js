@@ -30,7 +30,7 @@ client.interceptors.response.use(
  */
 export const fetchPredictions = async (tickers) => {
   const tickerString = Array.isArray(tickers) ? tickers.join(',') : tickers;
-  const res = await client.get(`/predict?tickers=${tickerString}`);
+  const res = await client.get(`/api/predict?tickers=${tickerString}`);
   return res.data;
 };
 
