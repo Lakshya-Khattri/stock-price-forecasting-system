@@ -6,40 +6,66 @@ const errorHandler = require('./errorHandler');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// CORS – allow all origins in development, restrict in production
+/* -------------------- CORS CONFIG -------------------- */
+
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',')
-  : ['http://localhost:5173', 'http://localhost:3000'];
+  : [];
 
 app.use(
   cors({
-    origin: (origin, callback) => {
-      if (!origin) return callback(null, true); // allow server-to-server
+    origin: function (origin, callback) {
+      // Allow server-to-server or tools like Postman
+      if (!origin) return callback(null, true);
+
+      // Allow localhost during development
       if (
-        allowedOrigins.includes(origin) ||
-        process.env.NODE_ENV !== 'production'
+        origin.startsWith('http://localhost') ||
+        origin.startsWith('http://127.0.0.1')
       ) {
         return callback(null, true);
       }
-      callback(new Error(`CORS policy: origin ${origin} not allowed`));
+
+      // Allow explicitly defined production origins
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      console.log('Blocked by CORS:', origin);
+      return callback(new Error('Not allowed by CORS'));
     },
-    methods: ['GET'],
     credentials: true,
   })
 );
 
+/* -------------------- MIDDLEWARE -------------------- */
+
 app.use(express.json());
 
-// Routes
+/* -------------------- ROUTES -------------------- */
+
 app.use('/api', routes);
 
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({ success: false, error: 'Route not found' });
+/* -------------------- HEALTH CHECK -------------------- */
+
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok' });
 });
 
-// Centralized error handler (must be last)
+/* -------------------- 404 HANDLER -------------------- */
+
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    error: 'Route not found',
+  });
+});
+
+/* -------------------- ERROR HANDLER -------------------- */
+
 app.use(errorHandler);
+
+/* -------------------- START SERVER -------------------- */
 
 app.listen(PORT, () => {
   console.log(`QuantEdge backend running on port ${PORT}`);
