@@ -1,16 +1,14 @@
 services:
   - type: web
-    name: quantedge-backend
-    env: node
+    name: stock-price-forecasting-system
+    runtime: python
     plan: free
-    buildCommand: npm install && pip3 install -r requirements.txt
+    rootDir: backend
+    buildCommand: |
+      python3.11 -m pip install --upgrade pip
+      python3.11 -m pip install -r requirements.txt
+      npm install
     startCommand: node server.js
     envVars:
       - key: NODE_ENV
         value: production
-      - key: PYTHON_CMD
-        value: python3
-      - key: ALLOWED_ORIGINS
-        value: https://your-netlify-app.netlify.app
-    healthCheckPath: /api/health
-    autoDeploy: true
