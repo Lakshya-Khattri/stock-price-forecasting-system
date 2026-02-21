@@ -10,28 +10,7 @@ const PORT = process.env.PORT || 5000;
 
 app.use(
   cors({
-    origin: function (origin, callback) {
-      if (!origin) return callback(null, true);
-
-      // Allow localhost
-      if (
-        origin.startsWith("http://localhost") ||
-        origin.startsWith("http://127.0.0.1")
-      ) {
-        return callback(null, true);
-      }
-
-      // Allow ANY Netlify subdomain for your project
-      if (
-        origin.endsWith(".netlify.app") &&
-        origin.includes("aistockpredictionbycodeforge")
-      ) {
-        return callback(null, true);
-      }
-
-      console.log("Blocked by CORS:", origin);
-      return callback(new Error("Not allowed by CORS"));
-    },
+    origin: true,
     credentials: true,
   })
 );
