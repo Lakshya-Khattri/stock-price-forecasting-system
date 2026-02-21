@@ -11,10 +11,9 @@ const PORT = process.env.PORT || 5000;
 app.use(
   cors({
     origin: function (origin, callback) {
-      // Allow server tools like Postman
       if (!origin) return callback(null, true);
 
-      // Allow localhost (development)
+      // Allow localhost
       if (
         origin.startsWith("http://localhost") ||
         origin.startsWith("http://127.0.0.1")
@@ -22,9 +21,10 @@ app.use(
         return callback(null, true);
       }
 
-      // Allow ANY Netlify deploy or preview URL for your project
+      // Allow ANY Netlify subdomain for your project
       if (
-        origin.includes("aistockpredictionbycodeforge.netlify.app")
+        origin.endsWith(".netlify.app") &&
+        origin.includes("aistockpredictionbycodeforge")
       ) {
         return callback(null, true);
       }
