@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import CompareView from './CompareView';
+import CompareView from './CompareView.jsx';
 import { fetchPredictions } from './api';
 
 const POPULAR_TICKERS = [
