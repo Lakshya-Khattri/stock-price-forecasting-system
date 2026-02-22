@@ -1,45 +1,62 @@
-import axios from 'axios';
+import axios from "axios";
 
-/**
- * BASE_URL determines where your frontend sends requests.
- * It checks Netlify environment variables first, then falls back to your Render URL.
- */
-const BASE_URL = import.meta.env.VITE_API_URL || "https://stock-price-forecasting-system.onrender.com";
+/*
+  BASE_URL:
+  - Uses Vercel environment variable if available
+  - Falls back to Render backend URL for safety
+*/
+const BASE_URL =
+  import.meta.env.VITE_API_URL ||
+  "https://stock-price-forecasting-system.onrender.com";
 
 const client = axios.create({
   baseURL: BASE_URL,
-  timeout: 180000, // 3 minutes - ML training and prediction can take time
-  headers: { 'Content-Type': 'application/json' },
+  timeout: 180000, // ML can take time
+  headers: {
+    "Content-Type": "application/json",
+  },
 });
 
-// Response interceptor for consistent error messages
+/* ---------------- RESPONSE INTERCEPTOR ---------------- */
+
 client.interceptors.response.use(
-  (res) => res,
-  (err) => {
+  (response) => response,
+  (error) => {
     const message =
-      err.response?.data?.error ||
-      (err.code === 'ECONNABORTED' ? 'Request timed out. ML model training can take up to 2 minutes.' : null) ||
-      err.message ||
-      'Network error. Is the backend running?';
+      error.response?.data?.error ||
+      (error.code === "ECONNABORTED"
+        ? "Request timed out. Backend may be sleeping (Render free tier)."
+        : null) ||
+      error.message ||
+      "Network error. Backend may be unreachable.";
+
     return Promise.reject(new Error(message));
   }
 );
 
+/* ---------------- API CALLS ---------------- */
+
 /**
- * Fetches stock predictions for given tickers.
+ * Fetch stock predictions
  */
 export const fetchPredictions = async (tickers) => {
-  const tickerString = Array.isArray(tickers) ? tickers.join(',') : tickers;
-  const res = await client.get(`/api/predict?tickers=${tickerString}`);
-  return res.data;
+  const tickerString = Array.isArray(tickers)
+    ? tickers.join(",")
+    : tickers;
+
+  const response = await client.get(
+    `/api/predict?tickers=${encodeURIComponent(tickerString)}`
+  );
+
+  return response.data;
 };
 
 /**
- * Checks if the Render backend is active.
+ * Backend health check
  */
 export const fetchHealth = async () => {
-  const res = await client.get('/api/health');
-  return res.data;
+  const response = await client.get(`/health`);
+  return response.data;
 };
 
 export default client;
