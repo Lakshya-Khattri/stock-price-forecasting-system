@@ -4,15 +4,16 @@ const { AppError } = require('./errorHandler');
 
 const ML_SCRIPT = path.join(__dirname, 'mlService.py');
 const PYTHON_CMD = process.env.PYTHON_CMD || 'python3';
-const TIMEOUT_MS = 120_000; // 2 minutes per request
+const TIMEOUT_MS = 120_000;
 
 /**
- * Runs the Python ML script for a single ticker.
- * Returns parsed JSON result.
+ * Runs Python ML script safely and returns parsed JSON.
  */
 function runMLService(ticker) {
   return new Promise((resolve, reject) => {
-    const proc = spawn(PYTHON_CMD, [ML_SCRIPT, ticker], {
+    const cleanTicker = ticker.trim().toUpperCase();
+
+    const proc = spawn(PYTHON_CMD, [ML_SCRIPT, cleanTicker], {
       env: { ...process.env, PYTHONUNBUFFERED: '1' },
     });
 
@@ -21,27 +22,46 @@ function runMLService(ticker) {
 
     const timeout = setTimeout(() => {
       proc.kill();
-      reject(new AppError(`ML prediction timed out for ticker: ${ticker}`, 504));
+      reject(new AppError(`ML prediction timed out for ticker: ${cleanTicker}`, 504));
     }, TIMEOUT_MS);
 
-    proc.stdout.on('data', (chunk) => (stdout += chunk.toString()));
-    proc.stderr.on('data', (chunk) => (stderr += chunk.toString()));
+    proc.stdout.on('data', (chunk) => {
+      stdout += chunk.toString();
+    });
+
+    proc.stderr.on('data', (chunk) => {
+      stderr += chunk.toString();
+    });
 
     proc.on('close', (code) => {
       clearTimeout(timeout);
+
       if (code !== 0) {
-        console.error(`[mlService] stderr for ${ticker}:\n${stderr}`);
-        const msg = extractPythonError(stderr) || `ML script failed for ${ticker}`;
+        console.error(`[mlService] Python stderr for ${cleanTicker}:\n${stderr}`);
+        const msg = extractPythonError(stderr) || `ML script failed for ${cleanTicker}`;
         return reject(new AppError(msg, 422));
       }
+
       try {
-        const result = JSON.parse(stdout.trim());
+        // Ensure we only parse valid JSON line
+        const cleanedOutput = stdout.trim();
+
+        if (!cleanedOutput) {
+          return reject(new AppError(`Empty ML response for ${cleanTicker}`, 500));
+        }
+
+        const result = JSON.parse(cleanedOutput);
+
         if (result.error) {
           return reject(new AppError(result.error, 422));
         }
+
         resolve(result);
-      } catch {
-        reject(new AppError(`Failed to parse ML output for ${ticker}`, 500));
+
+      } catch (err) {
+        console.error(`[mlService] Failed JSON parse for ${cleanTicker}`);
+        console.error("Raw stdout:\n", stdout);
+        reject(new AppError(`Failed to parse ML output for ${cleanTicker}`, 500));
       }
     });
 
@@ -53,26 +73,31 @@ function runMLService(ticker) {
 }
 
 function extractPythonError(stderr) {
+  if (!stderr) return null;
   const lines = stderr.trim().split('\n');
   const lastLine = lines[lines.length - 1];
-  if (lastLine && lastLine.length < 300) return lastLine;
-  return null;
+  return lastLine && lastLine.length < 300 ? lastLine : null;
 }
 
 /**
- * Fetch predictions for multiple tickers in parallel.
+ * Fetch predictions for multiple tickers safely.
  */
 async function getPredictions(tickers) {
+  const cleanTickers = tickers
+    .map(t => t.trim().toUpperCase())
+    .filter(Boolean);
+
   const results = await Promise.allSettled(
-    tickers.map((ticker) => runMLService(ticker))
+    cleanTickers.map(ticker => runMLService(ticker))
   );
 
   return results.map((result, i) => {
     if (result.status === 'fulfilled') {
       return result.value;
     }
+
     return {
-      ticker: tickers[i],
+      ticker: cleanTickers[i],
       error: result.reason?.message || 'Unknown error',
       success: false,
     };
