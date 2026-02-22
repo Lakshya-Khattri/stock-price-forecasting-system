@@ -91,7 +91,7 @@ def train_and_predict(df: pd.DataFrame):
 
     # -------- Predict next day --------
     latest_features = df[feature_cols].iloc[-1].values.reshape(1, -1)
-    latest_b = np.c_[np.ones((1, 1)), latest_features)
+    latest_b = np.c_[np.ones((1, 1)), latest_features]
 
     predicted_price = float((latest_b @ theta)[0][0])
 
