@@ -13,12 +13,11 @@ const POPULAR_STOCKS = [
 ];
 
 const STOCK_FACTS = [
-  "India’s stock market began in 1875 in Bombay. It is Asia’s oldest exchange.",
-  "SEBI was established in 1992 to regulate and stabilize Indian markets.",
-  "BSE Sensex started in 1986 and tracks 30 major companies.",
-  "Nifty 50 represents 50 leading companies listed on NSE.",
-  "India follows a T+1 rolling settlement system.",
-  "Rule of 72 estimates investment doubling time."
+  "India’s stock market began in 1875 in Bombay.",
+  "SEBI was established in 1992.",
+  "Nifty 50 tracks 50 leading NSE companies.",
+  "India follows a T+1 settlement system.",
+  "Rule of 72 estimates doubling time."
 ];
 
 export default function App() {
@@ -77,15 +76,14 @@ export default function App() {
         </h1>
 
         <p style={subtitle}>
-          Enter up to 5 ticker symbols to train a machine
-          learning model and predict tomorrow’s closing price.
+          Enter ticker symbols (comma separated) to predict tomorrow’s closing price.
         </p>
 
         <div style={inputWrapper}>
           <input
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
-            placeholder="AAPL, NVDA, TSLA..."
+            placeholder="AAPL, TSLA, NVDA..."
             style={inputStyle}
           />
 
@@ -103,15 +101,21 @@ export default function App() {
         </div>
 
         {/* DROPDOWN */}
-        <div style={{ marginTop: 15 }}>
+        <div style={dropdownWrapper}>
           <select
             style={dropdownStyle}
-            onChange={(e) => setInputValue(e.target.value)}
-            value=""
+            onChange={(e) => {
+              const selected = e.target.value;
+              if (!selected) return;
+
+              setInputValue((prev) => {
+                if (!prev) return selected;
+                if (prev.includes(selected)) return prev;
+                return prev + ", " + selected;
+              });
+            }}
           >
-            <option value="">
-              Select Popular Stock
-            </option>
+            <option value="">Add Popular Stock</option>
             {POPULAR_STOCKS.map((stock) => (
               <option key={stock} value={stock}>
                 {stock}
@@ -131,11 +135,9 @@ export default function App() {
           <div>
             <h3 style={infoTitle}>About</h3>
             <p style={infoText}>
-              QuantEdge AI is a machine learning-powered
-              stock forecasting platform that predicts
-              next-day closing prices using time-series
-              regression models with engineered financial
-              features.
+              QuantEdge AI is a machine learning-powered stock forecasting
+              platform predicting next-day closing prices using engineered
+              financial features and time-aware regression models.
             </p>
           </div>
 
@@ -156,7 +158,7 @@ export default function App() {
         onMouseEnter={() => setShowFact(true)}
         onMouseLeave={() => setShowFact(false)}
       >
-        built with precision · code forge
+        Built With Precision · CodeForge
 
         {showFact && (
           <div style={factBox}>
@@ -168,7 +170,7 @@ export default function App() {
   );
 }
 
-/* ---------------- STYLES ---------------- */
+/* ---------------- RESPONSIVE STYLES ---------------- */
 
 const appStyle = {
   minHeight: "100vh",
@@ -177,7 +179,9 @@ const appStyle = {
   justifyContent: "space-between",
   background: "#060b18",
   color: "#e6f1ff",
-  fontFamily: "Inter, sans-serif"
+  fontFamily: "Inter, sans-serif",
+  width: "100%",
+  overflowX: "hidden"
 };
 
 const headerStyle = {
@@ -185,7 +189,9 @@ const headerStyle = {
   justifyContent: "space-between",
   alignItems: "center",
   padding: "18px 24px",
-  borderBottom: "1px solid #111a2e"
+  borderBottom: "1px solid #111a2e",
+  flexWrap: "wrap",
+  gap: "10px"
 };
 
 const githubStyle = {
@@ -195,15 +201,16 @@ const githubStyle = {
 };
 
 const mainStyle = {
-  maxWidth: 1100,
   width: "100%",
+  maxWidth: "1200px",
   margin: "0 auto",
   padding: "40px 20px",
-  textAlign: "center"
+  textAlign: "center",
+  boxSizing: "border-box"
 };
 
 const heroTitle = {
-  fontSize: "clamp(28px,5vw,52px)",
+  fontSize: "clamp(26px, 6vw, 52px)",
   fontWeight: 800,
   marginBottom: 15
 };
@@ -218,20 +225,33 @@ const inputWrapper = {
   display: "flex",
   flexWrap: "wrap",
   gap: 12,
-  justifyContent: "center"
+  justifyContent: "center",
+  width: "100%",
+  maxWidth: "600px",
+  margin: "0 auto"
 };
 
 const inputStyle = {
+  flex: "1 1 250px",
+  minWidth: 0,
   background: "#0f1626",
   border: "1px solid #1f2a44",
   borderRadius: 10,
   padding: "14px 16px",
   color: "#fff",
-  minWidth: 250,
   fontSize: 16
 };
 
+const dropdownWrapper = {
+  marginTop: 15,
+  width: "100%",
+  maxWidth: "300px",
+  marginLeft: "auto",
+  marginRight: "auto"
+};
+
 const dropdownStyle = {
+  width: "100%",
   background: "#0f1626",
   border: "1px solid #1f2a44",
   borderRadius: 8,
@@ -241,6 +261,7 @@ const dropdownStyle = {
 };
 
 const buttonStyle = {
+  flex: "0 0 auto",
   background: "#111827",
   color: "#00d4ff",
   border: "1px solid #00d4ff",
@@ -265,11 +286,10 @@ const infoSection = {
 };
 
 const infoContainer = {
-  maxWidth: 1100,
+  maxWidth: "1100px",
   margin: "0 auto",
-  display: "flex",
-  justifyContent: "space-between",
-  flexWrap: "wrap",
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
   gap: 40
 };
 
@@ -281,7 +301,6 @@ const infoTitle = {
 
 const infoText = {
   color: "#8fa6d6",
-  maxWidth: 400,
   lineHeight: 1.6
 };
 
