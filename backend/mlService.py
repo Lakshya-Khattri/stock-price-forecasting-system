@@ -42,34 +42,43 @@ def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
     df["ma_5"] = close.rolling(5).mean()
     df["ma_10"] = close.rolling(10).mean()
 
-    df = df.dropna()
     return df
 
 
 def train_and_predict(df: pd.DataFrame):
     """
     Lightweight regression model using Normal Equation.
-    No sklearn dependency.
+    Predicts NEXT day's close.
     """
 
     feature_cols = [f"lag_{i}" for i in range(1, 6)] + ["ma_5", "ma_10"]
 
+    # Create next-day target
+    df["Target"] = df["Close"].shift(-1)
+
+    # Remove rows with NaN (from lag + MA + shift)
+    df = df.dropna()
+
+    if len(df) < 20:
+        raise ValueError("Not enough data after feature engineering.")
+
+    # Split features and target
     X = df[feature_cols].values
-    y = df["Close"].values.reshape(-1, 1)
+    y = df["Target"].values.reshape(-1, 1)
 
     # Add bias column (intercept)
     X_b = np.c_[np.ones((X.shape[0], 1)), X]
 
-    # Normal equation: theta = (XᵀX)^(-1) Xᵀ y
+    # Normal Equation
     theta = np.linalg.pinv(X_b.T @ X_b) @ X_b.T @ y
 
-    # Predictions on training set
+    # Training predictions (for RMSE)
     y_pred = X_b @ theta
     rmse = float(np.sqrt(np.mean((y - y_pred) ** 2)))
 
-    # Predict next day
-    latest = df[feature_cols].iloc[-1].values.reshape(1, -1)
-    latest_b = np.c_[np.ones((1, 1)), latest]
+    # ---- Predict next day ----
+    latest_features = df[feature_cols].iloc[-1].values.reshape(1, -1)
+    latest_b = np.c_[np.ones((1, 1)), latest_features]
     predicted_price = float((latest_b @ theta)[0][0])
 
     return predicted_price, rmse
@@ -114,9 +123,13 @@ def main():
 
     try:
         df_raw = fetch_data(ticker, period="1y")
+
         current_price = float(df_raw["Close"].iloc[-1])
 
+        # Feature engineering
         df_feat = engineer_features(df_raw.copy())
+
+        # Train model + predict next day
         predicted_price, rmse = train_and_predict(df_feat)
 
         signal = build_signal(current_price, predicted_price)
