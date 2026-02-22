@@ -238,11 +238,13 @@ export default function ChartComponent({ stocksData }) {
 export { CHART_COLORS };
 
 const wrapperStyle = {
-  background: 'var(--bg-card)',
-  border: '1px solid #1e293b',
-  borderRadius: '12px',
-  padding: '24px',
-  marginBottom: '24px',
+  width: "100%",
+  background: "var(--bg-card)",
+  border: "1px solid var(--border)",
+  borderRadius: "var(--radius)",
+  padding: "24px",
+  marginBottom: "32px",
+  boxSizing: "border-box"
 };
 
 const headerStyle = {
