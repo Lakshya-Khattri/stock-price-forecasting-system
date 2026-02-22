@@ -27,8 +27,16 @@ export default function App() {
   const [error, setError] = useState(null);
   const [showFact, setShowFact] = useState(false);
 
-  const handleSubmit = async () => {
-    if (!inputValue.trim()) return;
+  const handleSubmit = async (e) => {
+    if (e) e.preventDefault();
+
+    console.log("Analyze clicked");
+    console.log("Input:", inputValue);
+
+    if (!inputValue || !inputValue.trim()) {
+      console.log("Empty input, stopping");
+      return;
+    }
 
     setError(null);
     setResults(null);
@@ -36,15 +44,18 @@ export default function App() {
 
     try {
       const response = await fetchPredictions(
-        inputValue.toUpperCase()
+        inputValue.trim().toUpperCase()
       );
 
-      if (!response.success) {
-        throw new Error("Failed to fetch predictions");
+      console.log("API Response:", response);
+
+      if (!response || !response.success) {
+        throw new Error("Invalid response from server");
       }
 
       setResults(response.data);
     } catch (err) {
+      console.error("Error occurred:", err);
       setError(err.message || "Something went wrong");
     } finally {
       setLoading(false);
@@ -79,8 +90,10 @@ export default function App() {
           Enter ticker symbols (comma separated) to predict tomorrow’s closing price.
         </p>
 
-        <div style={inputWrapper}>
+        {/* FORM WRAPPER */}
+        <form onSubmit={handleSubmit} style={inputWrapper}>
           <input
+            type="text"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             placeholder="AAPL, TSLA, NVDA..."
@@ -88,7 +101,7 @@ export default function App() {
           />
 
           <button
-            onClick={handleSubmit}
+            type="submit"
             disabled={loading}
             style={{
               ...buttonStyle,
@@ -98,7 +111,7 @@ export default function App() {
           >
             {loading ? "Analyzing..." : "Analyze"}
           </button>
-        </div>
+        </form>
 
         {/* DROPDOWN */}
         <div style={dropdownWrapper}>
@@ -135,9 +148,9 @@ export default function App() {
           <div>
             <h3 style={infoTitle}>About</h3>
             <p style={infoText}>
-              QuantEdge AI is a machine learning-powered stock forecasting
-              platform predicting next-day closing prices using engineered
-              financial features and time-aware regression models.
+              QuantEdge AI predicts next-day stock prices using
+              time-aware regression models with engineered
+              financial indicators.
             </p>
           </div>
 
@@ -169,163 +182,3 @@ export default function App() {
     </div>
   );
 }
-
-/* ---------------- RESPONSIVE STYLES ---------------- */
-
-const appStyle = {
-  minHeight: "100vh",
-  display: "flex",
-  flexDirection: "column",
-  justifyContent: "space-between",
-  background: "#060b18",
-  color: "#e6f1ff",
-  fontFamily: "Inter, sans-serif",
-  width: "100%",
-  overflowX: "hidden"
-};
-
-const headerStyle = {
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center",
-  padding: "18px 24px",
-  borderBottom: "1px solid #111a2e",
-  flexWrap: "wrap",
-  gap: "10px"
-};
-
-const githubStyle = {
-  color: "#00d4ff",
-  textDecoration: "none",
-  fontWeight: 600
-};
-
-const mainStyle = {
-  width: "100%",
-  maxWidth: "1200px",
-  margin: "0 auto",
-  padding: "40px 20px",
-  textAlign: "center",
-  boxSizing: "border-box"
-};
-
-const heroTitle = {
-  fontSize: "clamp(26px, 6vw, 52px)",
-  fontWeight: 800,
-  marginBottom: 15
-};
-
-const subtitle = {
-  color: "#8fa6d6",
-  maxWidth: 600,
-  margin: "0 auto 30px"
-};
-
-const inputWrapper = {
-  display: "flex",
-  flexWrap: "wrap",
-  gap: 12,
-  justifyContent: "center",
-  width: "100%",
-  maxWidth: "600px",
-  margin: "0 auto"
-};
-
-const inputStyle = {
-  flex: "1 1 250px",
-  minWidth: 0,
-  background: "#0f1626",
-  border: "1px solid #1f2a44",
-  borderRadius: 10,
-  padding: "14px 16px",
-  color: "#fff",
-  fontSize: 16
-};
-
-const dropdownWrapper = {
-  marginTop: 15,
-  width: "100%",
-  maxWidth: "300px",
-  marginLeft: "auto",
-  marginRight: "auto"
-};
-
-const dropdownStyle = {
-  width: "100%",
-  background: "#0f1626",
-  border: "1px solid #1f2a44",
-  borderRadius: 8,
-  padding: "10px 14px",
-  color: "#fff",
-  fontSize: 14
-};
-
-const buttonStyle = {
-  flex: "0 0 auto",
-  background: "#111827",
-  color: "#00d4ff",
-  border: "1px solid #00d4ff",
-  borderRadius: 10,
-  padding: "14px 24px",
-  fontWeight: 600
-};
-
-const errorStyle = {
-  marginTop: 20,
-  padding: 12,
-  background: "#1a1f2e",
-  border: "1px solid #ff1744",
-  borderRadius: 8,
-  color: "#ff6b81"
-};
-
-const infoSection = {
-  borderTop: "1px solid #111a2e",
-  padding: "50px 20px",
-  background: "#0a1224"
-};
-
-const infoContainer = {
-  maxWidth: "1100px",
-  margin: "0 auto",
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-  gap: 40
-};
-
-const infoTitle = {
-  fontSize: 18,
-  marginBottom: 10,
-  color: "#ffffff"
-};
-
-const infoText = {
-  color: "#8fa6d6",
-  lineHeight: 1.6
-};
-
-const footerStyle = {
-  textAlign: "center",
-  padding: "22px 0",
-  borderTop: "1px solid #111a2e",
-  fontSize: 13,
-  color: "#6c7a99",
-  position: "relative",
-  cursor: "pointer"
-};
-
-const factBox = {
-  position: "absolute",
-  bottom: "55px",
-  left: "50%",
-  transform: "translateX(-50%)",
-  background: "#0f1626",
-  border: "1px solid #00d4ff",
-  padding: "14px 18px",
-  borderRadius: 10,
-  width: "90%",
-  maxWidth: 500,
-  fontSize: 13,
-  color: "#cde3ff",
-  boxShadow: "0 0 20px rgba(0,212,255,0.15)"
-};
