@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
 QuantEdge AI – ML Microservice
-Lightweight regression version (no sklearn).
-Deploy-safe for Render free tier.
+Improved regression version (no sklearn).
+Time-aware split + better features.
 
 Usage: python3 mlService.py <TICKER>
 """
@@ -20,7 +20,6 @@ import yfinance as yf
 
 
 def fetch_data(ticker: str, period: str = "1y") -> pd.DataFrame:
-    """Download historical OHLCV data for the given ticker."""
     stock = yf.Ticker(ticker)
     df = stock.history(period=period)
 
@@ -31,7 +30,6 @@ def fetch_data(ticker: str, period: str = "1y") -> pd.DataFrame:
 
 
 def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
-    """Create lag features and moving averages."""
     close = df["Close"].copy()
 
     # Lag features
@@ -42,44 +40,63 @@ def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
     df["ma_5"] = close.rolling(5).mean()
     df["ma_10"] = close.rolling(10).mean()
 
+    # Returns + Volatility
+    df["returns"] = close.pct_change()
+    df["volatility"] = close.pct_change().rolling(5).std()
+
     return df
 
 
 def train_and_predict(df: pd.DataFrame):
-    """
-    Lightweight regression model using Normal Equation.
-    Predicts NEXT day's close.
-    """
 
-    feature_cols = [f"lag_{i}" for i in range(1, 6)] + ["ma_5", "ma_10"]
+    feature_cols = [f"lag_{i}" for i in range(1, 6)] + [
+        "ma_5",
+        "ma_10",
+        "returns",
+        "volatility",
+    ]
 
     # Create next-day target
     df["Target"] = df["Close"].shift(-1)
 
-    # Remove rows with NaN (from lag + MA + shift)
+    # Drop NaN rows (lag + MA + shift)
     df = df.dropna()
 
-    if len(df) < 20:
+    if len(df) < 30:
         raise ValueError("Not enough data after feature engineering.")
 
-    # Split features and target
     X = df[feature_cols].values
     y = df["Target"].values.reshape(-1, 1)
 
-    # Add bias column (intercept)
-    X_b = np.c_[np.ones((X.shape[0], 1)), X]
+    # -------- Time-based split (80/20) --------
+    split_index = int(len(df) * 0.8)
 
-    # Normal Equation
-    theta = np.linalg.pinv(X_b.T @ X_b) @ X_b.T @ y
+    X_train = X[:split_index]
+    y_train = y[:split_index]
 
-    # Training predictions (for RMSE)
-    y_pred = X_b @ theta
-    rmse = float(np.sqrt(np.mean((y - y_pred) ** 2)))
+    X_test = X[split_index:]
+    y_test = y[split_index:]
 
-    # ---- Predict next day ----
+    # Add bias column
+    X_train_b = np.c_[np.ones((X_train.shape[0], 1)), X_train]
+
+    # Normal Equation training
+    theta = np.linalg.pinv(X_train_b.T @ X_train_b) @ X_train_b.T @ y_train
+
+    # -------- Evaluate on TEST set --------
+    X_test_b = np.c_[np.ones((X_test.shape[0], 1)), X_test]
+    y_pred_test = X_test_b @ theta
+
+    rmse = float(np.sqrt(np.mean((y_test - y_pred_test) ** 2)))
+
+    # -------- Predict next day --------
     latest_features = df[feature_cols].iloc[-1].values.reshape(1, -1)
-    latest_b = np.c_[np.ones((1, 1)), latest_features]
+    latest_b = np.c_[np.ones((1, 1)), latest_features)
+
     predicted_price = float((latest_b @ theta)[0][0])
+
+    # Prevent negative nonsense predictions
+    predicted_price = max(0, predicted_price)
 
     return predicted_price, rmse
 
@@ -95,7 +112,6 @@ def build_signal(current_price: float, predicted_price: float) -> str:
 
 
 def build_history(df: pd.DataFrame, months: int = 6) -> list:
-    """Return last N months of OHLCV for charting."""
     cutoff = pd.Timestamp.now(tz=df.index.tz) - pd.DateOffset(months=months)
     recent = df[df.index >= cutoff].copy()
 
@@ -123,13 +139,9 @@ def main():
 
     try:
         df_raw = fetch_data(ticker, period="1y")
-
         current_price = float(df_raw["Close"].iloc[-1])
 
-        # Feature engineering
         df_feat = engineer_features(df_raw.copy())
-
-        # Train model + predict next day
         predicted_price, rmse = train_and_predict(df_feat)
 
         signal = build_signal(current_price, predicted_price)
@@ -146,8 +158,8 @@ def main():
             "signal": signal,
             "rmse": round(rmse, 4),
             "history": history,
-            "featureCount": 7,
-            "modelType": "CustomLinearRegression",
+            "featureCount": 9,
+            "modelType": "TimeSplitLinearRegression",
         }
 
         print(json.dumps(result))
