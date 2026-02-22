@@ -2,17 +2,23 @@ import React, { useState } from "react";
 import CompareView from "./CompareView.jsx";
 import { fetchPredictions } from "./api";
 
+const POPULAR_STOCKS = [
+  "AAPL",
+  "TSLA",
+  "NVDA",
+  "MSFT",
+  "AMZN",
+  "GOOGL",
+  "META"
+];
+
 const STOCK_FACTS = [
   "India’s stock market began in 1875 in Bombay. It is Asia’s oldest exchange.",
   "SEBI was established in 1992 to regulate and stabilize Indian markets.",
   "BSE Sensex started in 1986 and tracks 30 major companies.",
   "Nifty 50 represents 50 leading companies listed on NSE.",
   "India follows a T+1 rolling settlement system.",
-  "BSE crossed ₹100 lakh crore market cap in 2014.",
-  "Post-COVID digital growth added 7 crore new investors.",
-  "Trading hours: 9:15 AM – 3:30 PM IST.",
-  "Rule of 72 estimates investment doubling time.",
-  "MRF is one of India’s highest-priced stocks."
+  "Rule of 72 estimates investment doubling time."
 ];
 
 export default function App() {
@@ -30,11 +36,17 @@ export default function App() {
     setLoading(true);
 
     try {
-      const response = await fetchPredictions(inputValue.toUpperCase());
-      if (!response.success) throw new Error(response.error);
+      const response = await fetchPredictions(
+        inputValue.toUpperCase()
+      );
+
+      if (!response.success) {
+        throw new Error("Failed to fetch predictions");
+      }
+
       setResults(response.data);
     } catch (err) {
-      setError(err.message);
+      setError(err.message || "Something went wrong");
     } finally {
       setLoading(false);
     }
@@ -45,6 +57,7 @@ export default function App() {
 
   return (
     <div style={appStyle}>
+      {/* HEADER */}
       <header style={headerStyle}>
         <h2 style={{ margin: 0 }}>QuantEdge AI</h2>
         <a
@@ -57,14 +70,15 @@ export default function App() {
         </a>
       </header>
 
+      {/* MAIN */}
       <main style={mainStyle}>
         <h1 style={heroTitle}>
           Intelligent Stock Forecasting Platform
         </h1>
 
         <p style={subtitle}>
-          Enter up to 5 ticker symbols to train a machine learning model
-          and predict tomorrow’s closing price.
+          Enter up to 5 ticker symbols to train a machine
+          learning model and predict tomorrow’s closing price.
         </p>
 
         <div style={inputWrapper}>
@@ -74,9 +88,36 @@ export default function App() {
             placeholder="AAPL, NVDA, TSLA..."
             style={inputStyle}
           />
-          <button onClick={handleSubmit} style={buttonStyle}>
+
+          <button
+            onClick={handleSubmit}
+            disabled={loading}
+            style={{
+              ...buttonStyle,
+              opacity: loading ? 0.6 : 1,
+              cursor: loading ? "not-allowed" : "pointer"
+            }}
+          >
             {loading ? "Analyzing..." : "Analyze"}
           </button>
+        </div>
+
+        {/* DROPDOWN */}
+        <div style={{ marginTop: 15 }}>
+          <select
+            style={dropdownStyle}
+            onChange={(e) => setInputValue(e.target.value)}
+            value=""
+          >
+            <option value="">
+              Select Popular Stock
+            </option>
+            {POPULAR_STOCKS.map((stock) => (
+              <option key={stock} value={stock}>
+                {stock}
+              </option>
+            ))}
+          </select>
         </div>
 
         {error && <div style={errorStyle}>{error}</div>}
@@ -84,12 +125,38 @@ export default function App() {
         {results && <CompareView results={results} />}
       </main>
 
+      {/* ABOUT + CONTACT */}
+      <section style={infoSection}>
+        <div style={infoContainer}>
+          <div>
+            <h3 style={infoTitle}>About</h3>
+            <p style={infoText}>
+              QuantEdge AI is a machine learning-powered
+              stock forecasting platform that predicts
+              next-day closing prices using time-series
+              regression models with engineered financial
+              features.
+            </p>
+          </div>
+
+          <div>
+            <h3 style={infoTitle}>Contact</h3>
+            <p style={infoText}>
+              Developer: Lakshya Khattri
+              <br />
+              GitHub: github.com/Lakshya-Khattri
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* FOOTER */}
       <footer
         style={footerStyle}
         onMouseEnter={() => setShowFact(true)}
         onMouseLeave={() => setShowFact(false)}
       >
-        made by lakshya khattri · code forge
+        built with precision · code forge
 
         {showFact && (
           <div style={factBox}>
@@ -101,7 +168,7 @@ export default function App() {
   );
 }
 
-/* ---------- STYLES ---------- */
+/* ---------------- STYLES ---------------- */
 
 const appStyle = {
   minHeight: "100vh",
@@ -164,13 +231,21 @@ const inputStyle = {
   fontSize: 16
 };
 
+const dropdownStyle = {
+  background: "#0f1626",
+  border: "1px solid #1f2a44",
+  borderRadius: 8,
+  padding: "10px 14px",
+  color: "#fff",
+  fontSize: 14
+};
+
 const buttonStyle = {
   background: "#111827",
   color: "#00d4ff",
   border: "1px solid #00d4ff",
   borderRadius: 10,
   padding: "14px 24px",
-  cursor: "pointer",
   fontWeight: 600
 };
 
@@ -181,6 +256,33 @@ const errorStyle = {
   border: "1px solid #ff1744",
   borderRadius: 8,
   color: "#ff6b81"
+};
+
+const infoSection = {
+  borderTop: "1px solid #111a2e",
+  padding: "50px 20px",
+  background: "#0a1224"
+};
+
+const infoContainer = {
+  maxWidth: 1100,
+  margin: "0 auto",
+  display: "flex",
+  justifyContent: "space-between",
+  flexWrap: "wrap",
+  gap: 40
+};
+
+const infoTitle = {
+  fontSize: 18,
+  marginBottom: 10,
+  color: "#ffffff"
+};
+
+const infoText = {
+  color: "#8fa6d6",
+  maxWidth: 400,
+  lineHeight: 1.6
 };
 
 const footerStyle = {
