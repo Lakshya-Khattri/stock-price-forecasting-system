@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   LineChart,
   Line,
@@ -8,17 +8,18 @@ import {
   Tooltip,
   ResponsiveContainer,
   ReferenceLine,
-} from 'recharts';
+} from "recharts";
 
 const CHART_COLORS = [
-  '#00d4ff',
-  '#7c4dff',
-  '#ff6d00',
-  '#00e676',
-  '#ff1744',
+  "#00d4ff",
+  "#7c4dff",
+  "#ff6d00",
+  "#00e676",
+  "#ff1744",
 ];
 
-// Merge histories by date
+/* ---------------- MERGE DATA ---------------- */
+
 function mergeHistories(stocksData) {
   const dateMap = {};
 
@@ -26,7 +27,9 @@ function mergeHistories(stocksData) {
     if (!stock.history || stock.error) return;
 
     stock.history.forEach((point) => {
-      if (!dateMap[point.date]) dateMap[point.date] = { date: point.date };
+      if (!dateMap[point.date])
+        dateMap[point.date] = { date: point.date };
+
       dateMap[point.date][stock.ticker] = point.close;
     });
   });
@@ -36,38 +39,47 @@ function mergeHistories(stocksData) {
   );
 }
 
-const tooltipStyle = {
-  background: 'var(--bg-card)',
-  border: '1px solid #334155',
-  borderRadius: '8px',
-  padding: '12px 16px',
-  boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
-};
+/* ---------------- TOOLTIP ---------------- */
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
 
   return (
-    <div style={tooltipStyle}>
-      <p style={{ color: '#94a3b8', fontSize: 11, marginBottom: 8 }}>
+    <div
+      style={{
+        background: "#0f172a",
+        border: "1px solid #334155",
+        borderRadius: "8px",
+        padding: "12px 16px",
+        boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+      }}
+    >
+      <p style={{ color: "#94a3b8", fontSize: 11, marginBottom: 8 }}>
         {label}
       </p>
+
       {payload.map((entry) => (
         <div
           key={entry.dataKey}
-          style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+          }}
         >
           <span style={{ color: entry.color, fontWeight: 600 }}>
             {entry.dataKey}
           </span>
           <span style={{ color: entry.color }}>
-            ${Number(entry.value).toFixed(2)}
+            {Number(entry.value).toFixed(2)}
           </span>
         </div>
       ))}
     </div>
   );
 };
+
+/* ---------------- COMPONENT ---------------- */
 
 export default function ChartComponent({ stocksData }) {
   const [hiddenTickers, setHiddenTickers] = useState(new Set());
@@ -89,7 +101,6 @@ export default function ChartComponent({ stocksData }) {
     });
   };
 
-  // Normalize for multi-stock comparison
   const normalizedData = isMulti
     ? merged.map((row) => {
         const norm = { date: row.date };
@@ -121,8 +132,8 @@ export default function ChartComponent({ stocksData }) {
     : (v) => `$${v.toFixed(0)}`;
 
   const formatXAxis = (tick) => {
-    if (!tick) return '';
-    const [, month, day] = tick.split('-');
+    if (!tick) return "";
+    const [, month, day] = tick.split("-");
     return `${month}/${day}`;
   };
 
@@ -131,7 +142,7 @@ export default function ChartComponent({ stocksData }) {
       <div style={headerStyle}>
         <h3 style={titleStyle}>
           {isMulti
-            ? 'Comparative Performance'
+            ? "Comparative Performance"
             : `${validStocks[0].ticker} – 6 Month History`}
         </h3>
 
@@ -147,7 +158,7 @@ export default function ChartComponent({ stocksData }) {
                 onClick={() => toggleTicker(stock.ticker)}
                 style={{
                   ...legendBtnStyle,
-                  opacity: hidden ? 0.35 : 1,
+                  opacity: hidden ? 0.4 : 1,
                   borderColor: color,
                 }}
               >
@@ -155,7 +166,7 @@ export default function ChartComponent({ stocksData }) {
                   style={{
                     width: 8,
                     height: 8,
-                    borderRadius: '50%',
+                    borderRadius: "50%",
                     background: color,
                   }}
                 />
@@ -168,114 +179,117 @@ export default function ChartComponent({ stocksData }) {
         </div>
       </div>
 
-      <ResponsiveContainer width="100%" height={400}>
-        <LineChart
-          data={normalizedData}
-          margin={{ top: 20, right: 30, left: 60, bottom: 30 }}
-        >
-          <CartesianGrid
-            stroke="#1e293b"
-            strokeDasharray="3 3"
-            vertical={false}
-          />
-
-          <XAxis
-            dataKey="date"
-            tickFormatter={formatXAxis}
-            stroke="#ffffff"
-            tick={{ fill: '#ffffff', fontSize: 12 }}
-            tickMargin={10}
-          />
-
-          <YAxis
-            tickFormatter={yFormatter}
-            stroke="#ffffff"
-            tick={{ fill: '#ffffff', fontSize: 12 }}
-            tickMargin={10}
-          />
-
-          <Tooltip content={<CustomTooltip />} />
-
-          {isMulti && (
-            <ReferenceLine
-              y={0}
-              stroke="#64748b"
-              strokeDasharray="4 2"
+      <div style={{ width: "100%", height: "60vh", minHeight: 350 }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart
+            data={normalizedData}
+            margin={{ top: 20, right: 30, left: 20, bottom: 30 }}
+          >
+            <CartesianGrid
+              stroke="#1e293b"
+              strokeDasharray="3 3"
+              vertical={false}
             />
-          )}
 
-          {validStocks.map((stock, i) => {
-            const color =
-              CHART_COLORS[i % CHART_COLORS.length];
+            <XAxis
+              dataKey="date"
+              tickFormatter={formatXAxis}
+              stroke="#ffffff"
+              tick={{ fill: "#ffffff", fontSize: 12 }}
+              tickMargin={10}
+            />
 
-            if (hiddenTickers.has(stock.ticker))
-              return null;
+            <YAxis
+              tickFormatter={yFormatter}
+              stroke="#ffffff"
+              tick={{ fill: "#ffffff", fontSize: 12 }}
+              tickMargin={10}
+            />
 
-            return (
-              <Line
-                key={stock.ticker}
-                type="monotone"
-                dataKey={stock.ticker}
-                stroke={color}
-                strokeWidth={2}
-                dot={false}
-                activeDot={{
-                  r: 5,
-                  fill: color,
-                  strokeWidth: 2,
-                  stroke: '#0f172a',
-                }}
-                connectNulls
+            <Tooltip content={<CustomTooltip />} />
+
+            {isMulti && (
+              <ReferenceLine
+                y={0}
+                stroke="#64748b"
+                strokeDasharray="4 2"
               />
-            );
-          })}
-        </LineChart>
-      </ResponsiveContainer>
+            )}
+
+            {validStocks.map((stock, i) => {
+              const color =
+                CHART_COLORS[i % CHART_COLORS.length];
+
+              if (hiddenTickers.has(stock.ticker))
+                return null;
+
+              return (
+                <Line
+                  key={stock.ticker}
+                  type="monotone"
+                  dataKey={stock.ticker}
+                  stroke={color}
+                  strokeWidth={2}
+                  dot={false}
+                  activeDot={{
+                    r: 5,
+                    fill: color,
+                    strokeWidth: 2,
+                    stroke: "#0f172a",
+                  }}
+                  connectNulls
+                />
+              );
+            })}
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
     </div>
   );
 }
 
 export { CHART_COLORS };
 
+/* ---------------- STYLES ---------------- */
+
 const wrapperStyle = {
   width: "100%",
-  background: "var(--bg-card)",
-  border: "1px solid var(--border)",
-  borderRadius: "var(--radius)",
+  background: "#0a1224",
+  border: "1px solid #1f2a44",
+  borderRadius: "16px",
   padding: "24px",
-  marginBottom: "32px",
-  boxSizing: "border-box"
+  marginBottom: "40px",
+  boxSizing: "border-box",
 };
 
 const headerStyle = {
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  marginBottom: '20px',
-  flexWrap: 'wrap',
-  gap: '12px',
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  marginBottom: "20px",
+  flexWrap: "wrap",
+  gap: "12px",
 };
 
 const titleStyle = {
-  fontSize: '16px',
+  fontSize: "18px",
   fontWeight: 700,
-  color: '#ffffff',
+  color: "#ffffff",
 };
 
 const legendStyle = {
-  display: 'flex',
-  gap: '8px',
-  flexWrap: 'wrap',
+  display: "flex",
+  gap: "8px",
+  flexWrap: "wrap",
 };
 
 const legendBtnStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: '6px',
-  padding: '6px 12px',
-  background: '#0f172a',
-  border: '1px solid',
-  borderRadius: '20px',
-  cursor: 'pointer',
-  transition: 'opacity 0.2s',
+  display: "flex",
+  alignItems: "center",
+  gap: "6px",
+  padding: "6px 12px",
+  background: "#0f172a",
+  border: "1px solid",
+  borderRadius: "20px",
+  cursor: "pointer",
 };
