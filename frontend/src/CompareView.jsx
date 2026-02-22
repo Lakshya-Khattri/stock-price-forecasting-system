@@ -91,9 +91,10 @@ export default function CompareView({ results }) {
 /* ---------- FULL WIDTH WRAPPER ---------- */
 
 const wrapperStyle = {
-  width: '100%',
+  width: "100%",
   marginTop: 40,
-  boxSizing: 'border-box'
+  padding: "0 40px",
+  boxSizing: "border-box"
 };
 
 /* ---------- SUMMARY ---------- */
