@@ -170,7 +170,7 @@ export default function App() {
   );
 }
 
-/* ---------------- FULL WIDTH LAYOUT ---------------- */
+/* ---------------- FULL EDGE-TO-EDGE LAYOUT ---------------- */
 
 const appStyle = {
   minHeight: "100vh",
@@ -184,19 +184,17 @@ const appStyle = {
 
 const headerStyle = {
   width: "100%",
-  padding: "20px 5vw",
+  padding: "20px 0",
   display: "flex",
   justifyContent: "space-between",
   alignItems: "center",
-  borderBottom: "1px solid #111a2e",
-  boxSizing: "border-box"
+  borderBottom: "1px solid #111a2e"
 };
 
 const mainStyle = {
   flex: 1,
   width: "100%",
-  padding: "60px 5vw",
-  boxSizing: "border-box"
+  padding: "60px 0"
 };
 
 /* HERO */
@@ -273,16 +271,16 @@ const errorStyle = {
 
 const infoSection = {
   width: "100%",
-  padding: "60px 5vw",
+  padding: "60px 0",
   background: "#0a1224",
-  borderTop: "1px solid #111a2e",
-  boxSizing: "border-box"
+  borderTop: "1px solid #111a2e"
 };
 
 const infoGrid = {
   display: "grid",
   gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-  gap: 40
+  gap: 40,
+  padding: "0 20px"
 };
 
 const infoTitle = {
