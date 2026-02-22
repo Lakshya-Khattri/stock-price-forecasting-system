@@ -17,11 +17,12 @@ export default function CompareView({ results }) {
   );
 
   return (
-    <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-      {/* Summary banner for multi-stock */}
+    <div style={wrapperStyle}>
+      {/* Summary banner */}
       {validResults.length > 1 && (
         <div style={summaryStyle}>
           <span style={summaryLabelStyle}>PORTFOLIO SIGNALS</span>
+
           <div style={summaryBadgesStyle}>
             {['BUY', 'HOLD', 'SELL'].map((sig) =>
               signalSummary[sig] ? (
@@ -29,9 +30,24 @@ export default function CompareView({ results }) {
                   key={sig}
                   style={{
                     ...sigBadgeStyle,
-                    color: sig === 'BUY' ? 'var(--buy-green)' : sig === 'SELL' ? 'var(--sell-red)' : 'var(--hold-amber)',
-                    background: sig === 'BUY' ? 'var(--buy-green-dim)' : sig === 'SELL' ? 'var(--sell-red-dim)' : 'var(--hold-amber-dim)',
-                    borderColor: sig === 'BUY' ? 'var(--buy-green)' : sig === 'SELL' ? 'var(--sell-red)' : 'var(--hold-amber)',
+                    color:
+                      sig === 'BUY'
+                        ? 'var(--buy-green)'
+                        : sig === 'SELL'
+                        ? 'var(--sell-red)'
+                        : 'var(--hold-amber)',
+                    background:
+                      sig === 'BUY'
+                        ? 'var(--buy-green-dim)'
+                        : sig === 'SELL'
+                        ? 'var(--sell-red-dim)'
+                        : 'var(--hold-amber-dim)',
+                    borderColor:
+                      sig === 'BUY'
+                        ? 'var(--buy-green)'
+                        : sig === 'SELL'
+                        ? 'var(--sell-red)'
+                        : 'var(--hold-amber)',
                   }}
                 >
                   {signalSummary[sig]}× {sig}
@@ -39,25 +55,18 @@ export default function CompareView({ results }) {
               ) : null
             )}
           </div>
-          <span style={summaryCountStyle}>{results.length} ticker{results.length > 1 ? 's' : ''} analyzed</span>
+
+          <span style={summaryCountStyle}>
+            {results.length} ticker{results.length > 1 ? 's' : ''} analyzed
+          </span>
         </div>
       )}
 
       {/* Chart */}
       <ChartComponent stocksData={results} />
 
-      {/* Cards grid */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: results.length === 1
-            ? '1fr'
-            : results.length === 2
-            ? '1fr 1fr'
-            : 'repeat(auto-fill, minmax(340px, 1fr))',
-          gap: '16px',
-        }}
-      >
+      {/* Cards */}
+      <div style={gridStyle}>
         {results.map((stock, i) => (
           <StockCard
             key={stock.ticker}
@@ -70,22 +79,34 @@ export default function CompareView({ results }) {
 
       {errorResults.length > 0 && (
         <p style={errorNoteStyle}>
-          {errorResults.length} ticker{errorResults.length > 1 ? 's' : ''} failed to load. Check that the symbol is valid on Yahoo Finance.
+          {errorResults.length} ticker
+          {errorResults.length > 1 ? 's' : ''} failed to load. Check that the
+          symbol is valid on Yahoo Finance.
         </p>
       )}
     </div>
   );
 }
 
+/* ---------- FULL WIDTH WRAPPER ---------- */
+
+const wrapperStyle = {
+  width: '100%',
+  marginTop: 40,
+  boxSizing: 'border-box'
+};
+
+/* ---------- SUMMARY ---------- */
+
 const summaryStyle = {
   display: 'flex',
   alignItems: 'center',
   gap: 16,
-  padding: '12px 20px',
+  padding: '14px 20px',
   background: 'var(--bg-card)',
   border: '1px solid var(--border)',
   borderRadius: 'var(--radius)',
-  marginBottom: 16,
+  marginBottom: 24,
   flexWrap: 'wrap',
 };
 
@@ -101,6 +122,7 @@ const summaryBadgesStyle = {
   display: 'flex',
   gap: 8,
   flex: 1,
+  flexWrap: 'wrap'
 };
 
 const sigBadgeStyle = {
@@ -118,8 +140,19 @@ const summaryCountStyle = {
   color: 'var(--text-secondary)',
 };
 
+/* ---------- GRID ---------- */
+
+const gridStyle = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+  gap: 20,
+  width: '100%'
+};
+
+/* ---------- ERROR ---------- */
+
 const errorNoteStyle = {
-  marginTop: 16,
+  marginTop: 20,
   fontSize: 12,
   fontFamily: 'JetBrains Mono, monospace',
   color: 'var(--sell-red)',
