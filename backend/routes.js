@@ -15,19 +15,34 @@ router.get('/health', (req, res) => {
 });
 
 // Prediction endpoint
-router.get('/predict', rateLimiter, validateTickers, async (req, res, next) => {
-  try {
-    const tickers = req.validatedTickers;
-    const results = await stockService.getPredictions(tickers);
-    res.json({
-      success: true,
-      timestamp: new Date().toISOString(),
-      count: results.length,
-      data: results,
-    });
-  } catch (err) {
-    next(err);
+router.get(
+  '/predict',
+  rateLimiter,
+  validateTickers,
+  async (req, res, next) => {
+    try {
+      const tickers = req.validatedTickers;
+
+      if (!Array.isArray(tickers) || tickers.length === 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'No valid tickers provided',
+        });
+      }
+
+      const results = await stockService.getPredictions(tickers);
+
+      return res.json({
+        success: true,
+        timestamp: new Date().toISOString(),
+        count: results.length,
+        data: results,
+      });
+
+    } catch (err) {
+      next(err);
+    }
   }
-});
+);
 
 module.exports = router;
