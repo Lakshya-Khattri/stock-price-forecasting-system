@@ -6,7 +6,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
   ReferenceLine,
 } from 'recharts';
@@ -19,33 +18,49 @@ const CHART_COLORS = [
   '#ff1744',
 ];
 
-// Merge multiple stocks' history into a single array keyed by date
+// Merge histories by date
 function mergeHistories(stocksData) {
   const dateMap = {};
+
   stocksData.forEach((stock) => {
     if (!stock.history || stock.error) return;
+
     stock.history.forEach((point) => {
       if (!dateMap[point.date]) dateMap[point.date] = { date: point.date };
       dateMap[point.date][stock.ticker] = point.close;
     });
   });
-  return Object.values(dateMap).sort((a, b) => a.date.localeCompare(b.date));
+
+  return Object.values(dateMap).sort((a, b) =>
+    a.date.localeCompare(b.date)
+  );
 }
+
+const tooltipStyle = {
+  background: 'var(--bg-card)',
+  border: '1px solid #334155',
+  borderRadius: '8px',
+  padding: '12px 16px',
+  boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+};
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
+
   return (
     <div style={tooltipStyle}>
-      <p style={{ color: 'var(--text-dim)', fontSize: 11, fontFamily: 'var(--text-mono)', marginBottom: 8 }}>
+      <p style={{ color: '#94a3b8', fontSize: 11, marginBottom: 8 }}>
         {label}
       </p>
       {payload.map((entry) => (
-        <div key={entry.dataKey} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-          <span style={{ width: 8, height: 8, borderRadius: '50%', background: entry.color, display: 'inline-block' }} />
-          <span style={{ color: 'var(--text-secondary)', fontSize: 12, fontFamily: 'var(--text-mono)', flex: 1 }}>
+        <div
+          key={entry.dataKey}
+          style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}
+        >
+          <span style={{ color: entry.color, fontWeight: 600 }}>
             {entry.dataKey}
           </span>
-          <span style={{ color: entry.color, fontWeight: 700, fontSize: 13, fontFamily: 'var(--text-mono)' }}>
+          <span style={{ color: entry.color }}>
             ${Number(entry.value).toFixed(2)}
           </span>
         </div>
@@ -54,21 +69,17 @@ const CustomTooltip = ({ active, payload, label }) => {
   );
 };
 
-const tooltipStyle = {
-  background: 'var(--bg-card)',
-  border: '1px solid var(--border-bright)',
-  borderRadius: 'var(--radius-sm)',
-  padding: '12px 16px',
-  boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
-};
-
 export default function ChartComponent({ stocksData }) {
   const [hiddenTickers, setHiddenTickers] = useState(new Set());
 
-  const validStocks = stocksData.filter((s) => s.history && !s.error);
+  const validStocks = stocksData.filter(
+    (s) => s.history && !s.error
+  );
+
   if (!validStocks.length) return null;
 
   const merged = mergeHistories(validStocks);
+  const isMulti = validStocks.length > 1;
 
   const toggleTicker = (ticker) => {
     setHiddenTickers((prev) => {
@@ -78,49 +89,58 @@ export default function ChartComponent({ stocksData }) {
     });
   };
 
-  // Format x-axis: show abbreviated date labels
+  // Normalize for multi-stock comparison
+  const normalizedData = isMulti
+    ? merged.map((row) => {
+        const norm = { date: row.date };
+
+        validStocks.forEach((stock) => {
+          const firstRow = merged.find(
+            (r) => r[stock.ticker] !== undefined
+          );
+
+          if (
+            firstRow &&
+            firstRow[stock.ticker] &&
+            row[stock.ticker]
+          ) {
+            norm[stock.ticker] =
+              ((row[stock.ticker] -
+                firstRow[stock.ticker]) /
+                firstRow[stock.ticker]) *
+              100;
+          }
+        });
+
+        return norm;
+      })
+    : merged;
+
+  const yFormatter = isMulti
+    ? (v) => `${v.toFixed(1)}%`
+    : (v) => `$${v.toFixed(0)}`;
+
   const formatXAxis = (tick) => {
     if (!tick) return '';
     const [, month, day] = tick.split('-');
     return `${month}/${day}`;
   };
 
-  // Normalize to % change from first point for multi-stock comparison
-  const isMulti = validStocks.length > 1;
-
-  const normalizedData = isMulti
-    ? merged.map((row) => {
-        const norm = { date: row.date };
-        validStocks.forEach((stock) => {
-          const firstRow = merged.find((r) => r[stock.ticker] !== undefined);
-          if (firstRow && firstRow[stock.ticker] && row[stock.ticker]) {
-            norm[stock.ticker] = parseFloat(
-              (((row[stock.ticker] - firstRow[stock.ticker]) / firstRow[stock.ticker]) * 100).toFixed(3)
-            );
-          }
-        });
-        return norm;
-      })
-    : merged;
-
-  const yAxisLabel = isMulti ? '% Change' : 'Price (USD)';
-  const yFormatter = isMulti ? (v) => `${v.toFixed(1)}%` : (v) => `$${v.toFixed(0)}`;
-
   return (
     <div style={wrapperStyle}>
       <div style={headerStyle}>
-        <div>
-          <h3 style={titleStyle}>
-            {isMulti ? 'Comparative Performance' : `${validStocks[0].ticker} – 6 Month History`}
-          </h3>
-          {isMulti && (
-            <p style={subtitleStyle}>Normalized to % change from start date for fair comparison</p>
-          )}
-        </div>
+        <h3 style={titleStyle}>
+          {isMulti
+            ? 'Comparative Performance'
+            : `${validStocks[0].ticker} – 6 Month History`}
+        </h3>
+
         <div style={legendStyle}>
           {validStocks.map((stock, i) => {
-            const color = CHART_COLORS[i % CHART_COLORS.length];
+            const color =
+              CHART_COLORS[i % CHART_COLORS.length];
             const hidden = hiddenTickers.has(stock.ticker);
+
             return (
               <button
                 key={stock.ticker}
@@ -131,63 +151,80 @@ export default function ChartComponent({ stocksData }) {
                   borderColor: color,
                 }}
               >
-                <span style={{ width: 8, height: 8, borderRadius: '50%', background: color }} />
-                <span style={{ color, fontWeight: 700, fontSize: 12, fontFamily: 'var(--text-mono)' }}>
+                <span
+                  style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: '50%',
+                    background: color,
+                  }}
+                />
+                <span style={{ color, fontWeight: 600 }}>
                   {stock.ticker}
                 </span>
-                {!hidden && (
-                  <span style={{ color: 'var(--text-secondary)', fontSize: 11, fontFamily: 'var(--text-mono)' }}>
-                    ${stock.currentPrice?.toFixed(2)}
-                  </span>
-                )}
               </button>
             );
           })}
         </div>
       </div>
 
-      <ResponsiveContainer width="100%" height={360}>
-        <LineChart data={normalizedData} margin={{ top: 10, right: 20, left: 10, bottom: 0 }}>
-          <defs>
-            {validStocks.map((stock, i) => {
-              const color = CHART_COLORS[i % CHART_COLORS.length];
-              return (
-                <linearGradient key={stock.ticker} id={`grad-${stock.ticker}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={color} stopOpacity={0.2} />
-                  <stop offset="95%" stopColor={color} stopOpacity={0} />
-                </linearGradient>
-              );
-            })}
-          </defs>
-          <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
+      <ResponsiveContainer width="100%" height={400}>
+        <LineChart
+          data={normalizedData}
+          margin={{ top: 20, right: 30, left: 60, bottom: 30 }}
+        >
+          <CartesianGrid
+            stroke="#1e293b"
+            strokeDasharray="3 3"
+            vertical={false}
+          />
+
           <XAxis
             dataKey="date"
             tickFormatter={formatXAxis}
-            tick={{ fill: 'var(--text-dim)', fontSize: 11, fontFamily: 'JetBrains Mono' }}
-            axisLine={{ stroke: 'var(--border)' }}
-            tickLine={false}
-            interval={Math.floor(merged.length / 8)}
+            stroke="#ffffff"
+            tick={{ fill: '#ffffff', fontSize: 12 }}
+            tickMargin={10}
           />
+
           <YAxis
             tickFormatter={yFormatter}
-            tick={{ fill: 'var(--text-dim)', fontSize: 11, fontFamily: 'JetBrains Mono' }}
-            axisLine={false}
-            tickLine={false}
-            width={70}
+            stroke="#ffffff"
+            tick={{ fill: '#ffffff', fontSize: 12 }}
+            tickMargin={10}
           />
+
           <Tooltip content={<CustomTooltip />} />
-          {isMulti && <ReferenceLine y={0} stroke="var(--border-bright)" strokeDasharray="4 2" />}
+
+          {isMulti && (
+            <ReferenceLine
+              y={0}
+              stroke="#64748b"
+              strokeDasharray="4 2"
+            />
+          )}
+
           {validStocks.map((stock, i) => {
-            const color = CHART_COLORS[i % CHART_COLORS.length];
+            const color =
+              CHART_COLORS[i % CHART_COLORS.length];
+
+            if (hiddenTickers.has(stock.ticker))
+              return null;
+
             return (
               <Line
                 key={stock.ticker}
                 type="monotone"
-                dataKey={hiddenTickers.has(stock.ticker) ? null : stock.ticker}
+                dataKey={stock.ticker}
                 stroke={color}
                 strokeWidth={2}
                 dot={false}
-                activeDot={{ r: 5, fill: color, strokeWidth: 2, stroke: 'var(--bg-card)' }}
+                activeDot={{
+                  r: 5,
+                  fill: color,
+                  strokeWidth: 2,
+                  stroke: '#0f172a',
+                }}
                 connectNulls
               />
             );
@@ -202,40 +239,31 @@ export { CHART_COLORS };
 
 const wrapperStyle = {
   background: 'var(--bg-card)',
-  border: '1px solid var(--border)',
-  borderRadius: 'var(--radius)',
+  border: '1px solid #1e293b',
+  borderRadius: '12px',
   padding: '24px',
   marginBottom: '24px',
 };
 
 const headerStyle = {
   display: 'flex',
-  alignItems: 'flex-start',
   justifyContent: 'space-between',
-  marginBottom: '24px',
+  alignItems: 'center',
+  marginBottom: '20px',
   flexWrap: 'wrap',
-  gap: '16px',
+  gap: '12px',
 };
 
 const titleStyle = {
   fontSize: '16px',
   fontWeight: 700,
-  color: 'var(--text-primary)',
-  letterSpacing: '-0.01em',
-};
-
-const subtitleStyle = {
-  fontSize: '11px',
-  color: 'var(--text-dim)',
-  fontFamily: 'JetBrains Mono, monospace',
-  marginTop: 4,
+  color: '#ffffff',
 };
 
 const legendStyle = {
   display: 'flex',
   gap: '8px',
   flexWrap: 'wrap',
-  justifyContent: 'flex-end',
 };
 
 const legendBtnStyle = {
@@ -243,7 +271,7 @@ const legendBtnStyle = {
   alignItems: 'center',
   gap: '6px',
   padding: '6px 12px',
-  background: 'var(--bg-surface)',
+  background: '#0f172a',
   border: '1px solid',
   borderRadius: '20px',
   cursor: 'pointer',
